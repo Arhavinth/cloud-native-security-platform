@@ -42,3 +42,13 @@ deny contains msg if {
         [container.name]
     )
 }
+deny contains msg if {
+    input.kind == "Deployment"
+    container := input.spec.template.spec.containers[_]
+    not container.securityContext.readOnlyRootFilesystem
+
+    msg := sprintf(
+        "Container %q must use a read-only root filesystem",
+        [container.name]
+    )
+}
