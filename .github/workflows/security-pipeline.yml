@@ -24,6 +24,16 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         continue-on-error: true
 
+      - name: Run Trivy dependency scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: application
+          severity: CRITICAL,HIGH,MEDIUM
+          ignore-unfixed: true
+          exit-code: '0'
+
+
       - name: Run Checkov IaC scan
         uses: bridgecrewio/checkov-action@master
         with:
