@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: security-demo-api
+  labels:
+    app: security-demo-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: security-demo-api
+  template:
+    metadata:
+      labels:
+        app: security-demo-api
+    spec:
+      containers:
+        - name: security-demo-api
+          image: security-platform-registry:5000/security-demo-api:dev
+          ports:
+            - containerPort: 8080
