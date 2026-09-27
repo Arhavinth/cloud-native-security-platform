@@ -21,7 +21,7 @@ jobs:
             ./application
 
       - name: Run Trivy vulnerability scan
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: security-demo-api:${{ github.sha }}
           format: table
