@@ -30,6 +30,14 @@ jobs:
           directory: infrastructure/terraform
         continue-on-error: true
 
+      - name: Run Trivy Kubernetes manifest scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: kubernetes
+          severity: CRITICAL,HIGH,MEDIUM
+          exit-code: '0'
+
       - name: Build Docker image
         run: |
           docker build \
