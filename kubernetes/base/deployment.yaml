@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: security-demo-api
-          image: security-platform-registry:5000/security-demo-api:dev
+          image: security-platform-registry:5000/security-demo-api@sha256:04a721c3b6bb39a4a6c874ae585a492ddc869006c3f4538ee44f2316325a0a39
 
           ports:
             - containerPort: 8080
