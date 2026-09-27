@@ -44,6 +44,14 @@ jobs:
             -t security-demo-api:${{ github.sha }} \
             ./application
 
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: security-demo-api:${{ github.sha }}
+          format: cyclonedx-json
+          output-file: sbom.json
+          artifact-name: security-demo-api-sbom
+
       - name: Run Trivy vulnerability scan
         uses: aquasecurity/trivy-action@master
         with:
