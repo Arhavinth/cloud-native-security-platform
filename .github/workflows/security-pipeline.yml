@@ -48,6 +48,19 @@ jobs:
           severity: CRITICAL,HIGH,MEDIUM
           exit-code: '0'
 
+      - name: Install Conftest
+        run: |
+          curl -L https://github.com/open-policy-agent/conftest/releases/download/v0.70.1/conftest_0.70.1_Linux_x86_64.tar.gz \
+            -o conftest.tar.gz
+          tar -xzf conftest.tar.gz
+          sudo mv conftest /usr/local/bin/conftest
+          conftest --version
+
+      - name: Run OPA policy checks
+        run: |
+          conftest test kubernetes/base/deployment.yaml \
+            --policy policy/kubernetes
+
       - name: Build Docker image
         run: |
           docker build \
