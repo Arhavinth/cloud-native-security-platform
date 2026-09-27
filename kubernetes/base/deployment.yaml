@@ -26,6 +26,9 @@ spec:
           ports:
             - containerPort: 8080
 
+          securityContext:
+            runAsNonRoot: true
+
           resources:
             requests:
               cpu: "100m"

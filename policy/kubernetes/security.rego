@@ -32,3 +32,13 @@ deny contains msg if {
         [container.name]
     )
 }
+deny contains msg if {
+    input.kind == "Deployment"
+    container := input.spec.template.spec.containers[_]
+    not container.securityContext.runAsNonRoot
+
+    msg := sprintf(
+        "Container %q must run as non-root",
+        [container.name]
+    )
+}
