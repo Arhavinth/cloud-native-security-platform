@@ -24,6 +24,12 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         continue-on-error: true
 
+      - name: Run Checkov IaC scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: infrastructure/terraform
+        continue-on-error: true
+
       - name: Build Docker image
         run: |
           docker build \
