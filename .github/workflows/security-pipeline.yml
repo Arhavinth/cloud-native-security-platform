@@ -19,6 +19,10 @@ jobs:
         with:
           config: p/python
         continue-on-error: true
+      
+      - name: Run Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+        continue-on-error: true
 
       - name: Build Docker image
         run: |
