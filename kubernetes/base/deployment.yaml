@@ -19,6 +19,8 @@ spec:
         app: security-demo-api
 
     spec:
+      serviceAccountName: security-demo-api
+
       containers:
         - name: security-demo-api
           image: security-platform-registry:5000/security-demo-api@sha256:0de520e28297027f8c76c2cd7c95a1638dc5756bff9ab50a13b6721cc67f912b
