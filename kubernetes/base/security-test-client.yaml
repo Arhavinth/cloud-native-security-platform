@@ -20,4 +20,6 @@ spec:
       command: ["sleep", "3600"]
       securityContext:
         runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 102
         readOnlyRootFilesystem: true
