@@ -3,3 +3,8 @@
 *.tfstate.*
 crash.log
 crash.*.log
+
+# Local Istio CLI
+istio-download.ps1
+istioctl-*-win-amd64.zip
+istioctl-*/
