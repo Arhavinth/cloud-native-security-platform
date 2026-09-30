@@ -8,3 +8,7 @@ crash.*.log
 istio-download.ps1
 istioctl-*-win-amd64.zip
 istioctl-*/
+__pycache__/
+*.pyc
+argocd-sync.json
+mtls-test-patch.json

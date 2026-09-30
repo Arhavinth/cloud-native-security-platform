@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-security-analyst
+  namespace: ai-security
+  labels:
+    app: ai-security-analyst
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-security-analyst
+  template:
+    metadata:
+      labels:
+        app: ai-security-analyst
+    spec:
+      containers:
+        - name: ai-security-analyst
+          image: security-platform-registry:5000/ai-security-analyst@sha256:993237f40115bff39dca9d8ae54d45929d68bd9ab7704fd2e2613e0bc173a91b
+          ports:
+            - containerPort: 8001
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
