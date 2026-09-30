@@ -5,7 +5,7 @@ import requests
 app = FastAPI(
     title="AI Security Analyst",
     description="Security analysis API for the Cloud-Native Security Platform",
-    version="0.2.0"
+    version="0.3.3"
 )
 
 PROMETHEUS_URL = "http://prometheus.monitoring.svc.cluster.local:9090"
@@ -66,8 +66,12 @@ def denied_connections():
             "source_namespace": metric.get("source_workload_namespace"),
             "source_principal": metric.get("source_principal"),
             "destination_workload": metric.get("destination_workload"),
-            "destination_namespace": metric.get("destination_workload_namespace"),
-            "destination_principal": metric.get("destination_principal"),
+            "destination_namespace": metric.get(
+                "destination_workload_namespace"
+            ),
+            "destination_principal": metric.get(
+                "destination_principal"
+            ),
             "response_flag": metric.get("response_flags"),
             "connection_security_policy": metric.get(
                 "connection_security_policy"
@@ -80,3 +84,77 @@ def denied_connections():
         "prometheus_status": data["status"],
         "findings": findings
     }
+
+
+@app.get("/analyze/denied-connections")
+def analyze_denied_connections():
+    query = 'istio_tcp_connections_failed_total{response_flags="DENY"}'
+
+    response = requests.get(
+        f"{PROMETHEUS_URL}/api/v1/query",
+        params={"query": query},
+        timeout=5
+    )
+
+    response.raise_for_status()
+
+    data = response.json()
+
+    findings = []
+
+    for item in data["data"]["result"]:
+        metric = item["metric"]
+        denied_connections = int(float(item["value"][1]))
+
+        source = metric.get("source_workload", "unknown")
+        destination = metric.get("destination_workload", "unknown")
+
+        source_principal = metric.get(
+            "source_principal",
+            "unknown"
+        )
+
+        destination_principal = metric.get(
+            "destination_principal",
+            "unknown"
+        )
+
+        findings.append({
+            "finding": (
+                f"Unauthorized connection attempt from "
+                f"{source} to {destination}"
+            ),
+            "severity": "HIGH",
+            "source": source,
+            "destination": destination,
+            "evidence": {
+                "response_flag": metric.get(
+                    "response_flags"
+                ),
+                "connection_security_policy": metric.get(
+                    "connection_security_policy"
+                ),
+                "denied_connections": denied_connections,
+                "source_principal": source_principal,
+                "destination_principal": destination_principal
+            },
+            "security_control": (
+                "Istio AuthorizationPolicy denied the connection."
+            ),
+            "impact": (
+                "The source workload was prevented from communicating "
+                "with the protected destination."
+            ),
+            "recommended_action": (
+                "Review the source workload identity and verify that "
+                "the authorization policy allows only intended "
+                "service-to-service communication."
+            )
+        })
+
+    return {
+        "analysis_type": "istio_denied_connection_analysis",
+        "prometheus_status": data["status"],
+        "findings": findings
+    }
+
