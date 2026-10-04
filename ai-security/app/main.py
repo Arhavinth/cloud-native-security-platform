@@ -19,6 +19,17 @@ class SecurityFinding(BaseModel):
     control: str
 
 
+class SecurityEvidence(BaseModel):
+    event_type: str
+    source_workload: str
+    destination_workload: str
+    source_principal: str
+    destination_principal: str
+    response: str
+    security_protocol: str
+    denied_connections: int
+
+
 @app.get("/health")
 def health():
     return {
@@ -36,8 +47,14 @@ def analyze_finding(finding: SecurityFinding):
         "destination": finding.destination,
         "evidence": finding.evidence,
         "security_control": finding.control,
-        "impact": "Unauthorized communication was prevented by the security control.",
-        "recommended_action": "Review the workload identity and authorization policy."
+        "impact": (
+            "Unauthorized communication was prevented "
+            "by the security control."
+        ),
+        "recommended_action": (
+            "Review the workload identity and "
+            "authorization policy."
+        )
     }
 
 
@@ -61,23 +78,36 @@ def denied_connections():
         metric = item["metric"]
         value = item["value"][1]
 
-        findings.append({
-            "source_workload": metric.get("source_workload"),
-            "source_namespace": metric.get("source_workload_namespace"),
-            "source_principal": metric.get("source_principal"),
-            "destination_workload": metric.get("destination_workload"),
-            "destination_namespace": metric.get(
-                "destination_workload_namespace"
+        evidence = SecurityEvidence(
+            event_type="authorization_denial",
+            source_workload=metric.get(
+                "source_workload",
+                "unknown"
             ),
-            "destination_principal": metric.get(
-                "destination_principal"
+            destination_workload=metric.get(
+                "destination_workload",
+                "unknown"
             ),
-            "response_flag": metric.get("response_flags"),
-            "connection_security_policy": metric.get(
-                "connection_security_policy"
+            source_principal=metric.get(
+                "source_principal",
+                "unknown"
             ),
-            "denied_connections": int(float(value))
-        })
+            destination_principal=metric.get(
+                "destination_principal",
+                "unknown"
+            ),
+            response=metric.get(
+                "response_flags",
+                "unknown"
+            ),
+            security_protocol=metric.get(
+                "connection_security_policy",
+                "unknown"
+            ),
+            denied_connections=int(float(value))
+        )
+
+        findings.append(evidence.model_dump())
 
     return {
         "evidence_type": "istio_authorization_denial",
@@ -104,10 +134,20 @@ def analyze_denied_connections():
 
     for item in data["data"]["result"]:
         metric = item["metric"]
-        denied_connections = int(float(item["value"][1]))
 
-        source = metric.get("source_workload", "unknown")
-        destination = metric.get("destination_workload", "unknown")
+        denied_connections = int(
+            float(item["value"][1])
+        )
+
+        source = metric.get(
+            "source_workload",
+            "unknown"
+        )
+
+        destination = metric.get(
+            "destination_workload",
+            "unknown"
+        )
 
         source_principal = metric.get(
             "source_principal",
@@ -119,6 +159,23 @@ def analyze_denied_connections():
             "unknown"
         )
 
+        evidence = SecurityEvidence(
+            event_type="authorization_denial",
+            source_workload=source,
+            destination_workload=destination,
+            source_principal=source_principal,
+            destination_principal=destination_principal,
+            response=metric.get(
+                "response_flags",
+                "unknown"
+            ),
+            security_protocol=metric.get(
+                "connection_security_policy",
+                "unknown"
+            ),
+            denied_connections=denied_connections
+        )
+
         findings.append({
             "finding": (
                 f"Unauthorized connection attempt from "
@@ -127,28 +184,19 @@ def analyze_denied_connections():
             "severity": "HIGH",
             "source": source,
             "destination": destination,
-            "evidence": {
-                "response_flag": metric.get(
-                    "response_flags"
-                ),
-                "connection_security_policy": metric.get(
-                    "connection_security_policy"
-                ),
-                "denied_connections": denied_connections,
-                "source_principal": source_principal,
-                "destination_principal": destination_principal
-            },
+            "evidence": evidence.model_dump(),
             "security_control": (
-                "Istio AuthorizationPolicy denied the connection."
+                "Istio AuthorizationPolicy denied "
+                "the connection."
             ),
             "impact": (
-                "The source workload was prevented from communicating "
-                "with the protected destination."
+                "The source workload was prevented from "
+                "communicating with the protected destination."
             ),
             "recommended_action": (
-                "Review the source workload identity and verify that "
-                "the authorization policy allows only intended "
-                "service-to-service communication."
+                "Review the source workload identity and verify "
+                "that the authorization policy allows only "
+                "intended service-to-service communication."
             )
         })
 
@@ -157,4 +205,3 @@ def analyze_denied_connections():
         "prometheus_status": data["status"],
         "findings": findings
     }
-
