@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: ai-security-analyst
-          image: security-platform-registry:5000/ai-security-analyst@sha256:2238238afcb8c34e22d74ed42b3d460cf5d5bf6bdc84285ecf966f6e1dfa449c
+          image: security-platform-registry:5000/ai-security-analyst@sha256:dca5b054ce32e8825c648e9ba8c6004fa997dc3ea5090b7de5d8b615984ba1df
           ports:
             - containerPort: 8001
           securityContext:
