@@ -1,3 +1,4 @@
+
 name: Security Pipeline
 
 on:
@@ -14,12 +15,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: ai-security/requirements.txt
+
+      - name: Install AI Security Analyst test dependencies
+        run: |
+          python -m pip install -r ai-security/requirements.txt
+          python -m pip install pytest
+
+      - name: Run AI Security Analyst regression tests
+        run: |
+          python -m pytest ai-security/tests -v
+
       - name: Run Semgrep SAST
         uses: semgrep/semgrep-action@v1
         with:
           config: p/python
         continue-on-error: true
-      
+
       - name: Run Gitleaks secret scan
         uses: gitleaks/gitleaks-action@v2
         continue-on-error: true
@@ -32,7 +49,6 @@ jobs:
           severity: CRITICAL,HIGH,MEDIUM
           ignore-unfixed: true
           exit-code: '0'
-
 
       - name: Run Checkov IaC scan
         uses: bridgecrewio/checkov-action@master
