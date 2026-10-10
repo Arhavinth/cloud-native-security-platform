@@ -123,9 +123,13 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
+      contents: write
       packages: write
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Download scanned Docker image
         uses: actions/download-artifact@v4
         with:
@@ -142,16 +146,76 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push scanned image to GHCR
+      - name: Publish image and update GitOps manifest
         shell: bash
+        env:
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           set -euo pipefail
 
           IMAGE_NAME="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/security-demo-api"
-          IMAGE_TAG="${GITHUB_SHA}"
 
+          # Push the exact image that passed the CI build and scan.
           docker tag \
             "security-demo-api:${IMAGE_TAG}" \
             "${IMAGE_NAME}:${IMAGE_TAG}"
 
-          docker push "${IMAGE_NAME}:${IMAGE_TAG}"
+          docker push "${IMAGE_NAME}:${IMAGE_TAG}" 2>&1 | tee push.log
+
+          # Extract the immutable digest reported by the registry.
+          DIGEST="$(sed -nE \
+            's/.*digest: (sha256:[0-9a-f]{64}).*/\1/p' \
+            push.log | tail -n 1)"
+
+          if [[ ! "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "ERROR: Could not extract the published image digest."
+            exit 1
+          fi
+
+          IMAGE_REF="${IMAGE_NAME}@${DIGEST}"
+          export IMAGE_REF
+
+          echo "Published image: ${IMAGE_REF}"
+
+          # Update exactly one image reference in the GitOps manifest.
+          python - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          path = Path("kubernetes/base/deployment.yaml")
+          content = path.read_text(encoding="utf-8")
+          pattern = re.compile(r"(?m)^(\s*image:\s*).+\s*$")
+          matches = list(pattern.finditer(content))
+
+          if len(matches) != 1:
+              raise SystemExit(
+                  f"Expected exactly one image reference in {path}; "
+                  f"found {len(matches)}. Refusing to modify the manifest."
+              )
+
+          updated = pattern.sub(
+              lambda match: match.group(1) + os.environ["IMAGE_REF"],
+              content,
+              count=1,
+          )
+
+          path.write_text(updated, encoding="utf-8")
+          PY
+
+          # Validate and commit the manifest change.
+          git diff --check
+          git diff -- kubernetes/base/deployment.yaml
+
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add kubernetes/base/deployment.yaml
+
+          if git diff --cached --quiet; then
+            echo "Manifest already references this image digest."
+          else
+            git commit -m "Update security-demo-api image digest"
+            git push origin HEAD:master
+          fi
