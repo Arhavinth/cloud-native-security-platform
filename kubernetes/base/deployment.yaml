@@ -23,8 +23,7 @@ spec:
 
       containers:
         - name: security-demo-api
-          image: security-platform-registry:5000/security-demo-api@sha256:0de520e28297027f8c76c2cd7c95a1638dc5756bff9ab50a13b6721cc67f912b
-
+          image: ghcr.io/arhavinth/security-demo-api@sha256:938b96816338455340b1cb4b7d71126f184aa32b0eb0545d19ac85d79d9ca9d8
           ports:
             - containerPort: 8080
 
